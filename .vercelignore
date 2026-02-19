@@ -1,0 +1,31 @@
+# Безопасность: не отправляем чувствительные файлы на Vercel
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.cer
+*.crt
+*.pfx
+secrets.*
+credentials*
+
+# Git-метаданные и локальные настройки
+.git
+.github
+.vscode
+.idea
+
+# Пакеты и сборка (если появятся)
+node_modules
+.next
+out
+dist
+build
+coverage
+*.log
+
+# Служебные и кешевые файлы
+.DS_Store
+Thumbs.db
+desktop.ini
