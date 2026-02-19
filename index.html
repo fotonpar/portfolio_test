@@ -37,7 +37,7 @@
       body {
         margin: 0;
         min-height: 100%;
-        overflow-x: hidden;
+        overflow-x: clip;
       }
 
       body {
@@ -216,15 +216,11 @@
         background: var(--bg-2);
       }
 
-      .hero-avatar img,
-      .hero-avatar__inner svg {
+      .hero-avatar img {
         display: block;
         width: 100%;
         height: 100%;
         object-fit: cover;
-      }
-      .hero-avatar__inner svg {
-        vertical-align: top;
       }
 
       .hero-tag {
@@ -300,12 +296,10 @@
         z-index: calc(100 - var(--order));
         margin-top: 0.8rem;
         max-height: 1200px;
-        transition: max-height 0.95s ease, transform 0.58s ease,
+        transition: max-height 0.64s ease, transform 0.58s ease,
           box-shadow 0.48s ease;
         opacity: 0;
         transform: translateY(18px);
-        -webkit-backface-visibility: hidden;
-        backface-visibility: hidden;
       }
 
       .stack-section.collapsed {
@@ -321,8 +315,8 @@
         gap: 0.8rem;
         height: 3.25rem;
         min-height: 3.25rem;
-        padding: 0 1rem;
-        width: min(50%, 520px);
+        padding: 0 1.5rem 0 1.15rem;
+        width: min(96%, 680px);
         box-sizing: border-box;
       }
 
@@ -346,6 +340,8 @@
         line-height: 1;
         align-self: center;
         letter-spacing: 0.01em;
+        flex-shrink: 0;
+        overflow: visible;
         background: linear-gradient(
           95deg,
           rgba(127, 91, 255, 1),
@@ -385,11 +381,10 @@
         z-index: 1;
         max-height: 900px;
         opacity: 1;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        transition: max-height 0.95s ease, opacity 0.52s ease,
+        overflow: hidden;
+        transition: max-height 0.62s ease, opacity 0.52s ease,
           padding-bottom 0.62s ease;
-        padding: 0 1rem 1rem;
+        padding: 0 1rem 1.15rem;
       }
 
       .stack-section.collapsed .stack-body {
@@ -669,7 +664,7 @@
       body.is-ready .stack-section {
         transition: opacity 0.78s ease calc(var(--order) * 78ms),
           transform 0.78s ease calc(var(--order) * 78ms),
-          max-height 0.95s ease, box-shadow 0.48s ease;
+          max-height 0.64s ease, box-shadow 0.48s ease;
       }
 
       @media (max-width: 740px) {
@@ -690,78 +685,21 @@
         }
 
         .hero-inner {
-          display: grid;
-          grid-template-columns: 1fr auto;
-          grid-template-rows: 100px auto;
-          gap: 0.75rem 1rem;
-        }
-
-        .hero-content {
-          grid-column: 1;
-          grid-row: 1 / 3;
-          display: grid;
-          grid-template-rows: 100px auto;
-          grid-template-columns: 1fr;
-          min-width: 0;
-        }
-
-        .hero-content .hero-tag {
-          grid-row: 2;
-        }
-
-        .hero-content h1 {
-          grid-row: 1;
-          align-self: end;
-          font-size: 1.35rem;
-          line-height: 1.15;
-          white-space: nowrap;
-        }
-
-        .hero-content .lead {
-          grid-row: 2;
-        }
-
-        .hero-content .hero-actions {
-          grid-row: 2;
-        }
-
-        .hero-avatar {
-          grid-column: 2;
-          grid-row: 1;
-          align-self: end;
-          width: 92px;
-          height: 92px;
-        }
-
-        .hero-avatar img,
-        .hero-avatar__inner svg {
-          width: 100%;
-          height: 100%;
-        }
-
-        .stack-section {
-          position: sticky;
-          top: calc(var(--stack-gap) + (var(--order) * var(--stack-step)));
-          max-height: 1400px;
+          flex-direction: column;
+          align-items: flex-end;
         }
 
         .stack-head {
-          padding: 0.8rem 0.84rem;
+          padding: 0.8rem 1.1rem 0.8rem 0.84rem;
           width: 100%;
-          min-height: 3.25rem;
-        }
-
-        .section-toggle {
-          min-height: 3.25rem;
-          padding: 0.5rem 0;
         }
 
         .stack-body {
-          padding: 0 0.84rem 0.84rem;
-          max-height: min(72vh, 520px);
-          overflow-y: auto;
-          -webkit-overflow-scrolling: touch;
-          overscroll-behavior: contain;
+          padding: 0 0.84rem;
+        }
+
+        .stack-section {
+          max-height: 1400px;
         }
 
         .stack-section.collapsed .stack-body {
@@ -847,7 +785,7 @@
             <span class="hero-avatar__inner">
               <img
                 src="avatar.png"
-                alt="Миша Кремень"
+                alt=""
                 width="150"
                 height="150"
                 loading="eager"
@@ -1070,7 +1008,6 @@
       const SCROLL_DELTA_THRESHOLD = 1;
       const READ_COMPLETE_GAP = 18;
       const READ_UP_HYSTERESIS = 24;
-      const HEADER_AT_TOP_PX = 28;
       let lastScrollY = window.scrollY;
       let pendingScrollY = window.scrollY;
       let expandedSet = new Set();
@@ -1165,22 +1102,15 @@
           justCollapsedAll = true;
         } else if (direction === "down" && !withinClickLock) {
           if (collapsedPrefixCount < lastIndex) {
-            const section = sections[collapsedPrefixCount];
-            const head = section.querySelector(".stack-head");
-            const headRect = head ? head.getBoundingClientRect() : null;
-            const headerAtTop = headRect && headRect.top <= HEADER_AT_TOP_PX;
-
-            const body = section.querySelector(".stack-body");
-            const bodyScrollAtTop = !body || body.scrollHeight <= body.clientHeight || body.scrollTop <= 2;
-
-            const currentRect = section.getBoundingClientRect();
+            const currentRect =
+              sections[collapsedPrefixCount].getBoundingClientRect();
             const { isLongSection, readThresholdPx } =
               getSectionReadingMetrics(collapsedPrefixCount);
             const sectionReadCompleted = currentRect.bottom <= readThresholdPx;
 
             if (isLongSection && !sectionReadCompleted) {
               // Reading mode: do not auto-collapse while long content is not read.
-            } else if (headerAtTop && bodyScrollAtTop && sectionReadCompleted) {
+            } else if (sectionReadCompleted) {
               expandedSet.delete(collapsedPrefixCount);
             }
           }
