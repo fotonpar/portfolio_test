@@ -1,0 +1,8 @@
+# Секреты
+.env
+.env.*
+*.pem
+*.key
+# OS
+.DS_Store
+Thumbs.db
