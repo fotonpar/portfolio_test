@@ -29,15 +29,10 @@
         box-sizing: border-box;
       }
 
-      html {
-        -webkit-text-size-adjust: 100%;
-      }
-
       html,
       body {
         margin: 0;
         min-height: 100%;
-        overflow-x: clip;
       }
 
       body {
@@ -315,8 +310,8 @@
         gap: 0.8rem;
         height: 3.25rem;
         min-height: 3.25rem;
-        padding: 0 1.5rem 0 1.15rem;
-        width: min(96%, 680px);
+        padding: 0 1rem;
+        width: min(50%, 520px);
         box-sizing: border-box;
       }
 
@@ -340,8 +335,6 @@
         line-height: 1;
         align-self: center;
         letter-spacing: 0.01em;
-        flex-shrink: 0;
-        overflow: visible;
         background: linear-gradient(
           95deg,
           rgba(127, 91, 255, 1),
@@ -673,11 +666,7 @@
         }
 
         .page {
-          padding-top: max(1.2rem, env(safe-area-inset-top));
-          padding-left: max(1rem, env(safe-area-inset-left));
-          padding-right: max(1rem, env(safe-area-inset-right));
-          width: 100%;
-          box-sizing: border-box;
+          padding-top: 1.2rem;
         }
 
         .hero {
@@ -690,7 +679,7 @@
         }
 
         .stack-head {
-          padding: 0.8rem 1.1rem 0.8rem 0.84rem;
+          padding: 0.8rem 0.84rem;
           width: 100%;
         }
 
@@ -708,17 +697,6 @@
 
         .social-link {
           min-width: 100%;
-          min-height: 2.75rem;
-          padding: 0.75rem 0.82rem;
-        }
-
-        .link-chip {
-          min-height: 2.75rem;
-          padding: 0.7rem 1rem;
-        }
-
-        footer {
-          padding-bottom: max(1.3rem, env(safe-area-inset-bottom));
         }
       }
 
