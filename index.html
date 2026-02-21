@@ -1199,5 +1199,107 @@
         });
       });
     </script>
+
+    <!-- Chat widget (portfolio chatbot) -->
+    <div id="ai-chat-widget" aria-label="Чат с помощником">
+      <button id="ai-chat-toggle" type="button" aria-expanded="false" aria-controls="ai-chat-window" title="Открыть чат">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
+      </button>
+      <div id="ai-chat-window" role="dialog" aria-label="Окно чата" hidden>
+        <div class="ai-chat-header">
+          <span id="chat-title">Помощник по портфолио</span>
+          <button type="button" class="ai-chat-close" aria-label="Закрыть чат">&times;</button>
+        </div>
+        <div class="ai-chat-messages" id="chat-messages"></div>
+        <div class="ai-chat-input">
+          <input type="text" id="user-message" placeholder="Напишите сообщение..." autocomplete="off" aria-label="Сообщение" />
+          <button type="button" id="send-btn" aria-label="Отправить">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <style>
+      #ai-chat-widget { position: fixed; bottom: 20px; right: 20px; z-index: 999999; font-family: var(--font-text, Montserrat, sans-serif); }
+      #ai-chat-toggle { width: 56px; height: 56px; border-radius: 50%; border: 1px solid rgba(127, 91, 255, 0.5); background: linear-gradient(135deg, var(--accent-a, #7f5bff), var(--accent-b, #ef46ff)); color: #fff; cursor: pointer; box-shadow: 0 4px 24px rgba(127, 91, 255, 0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+      #ai-chat-toggle:hover { transform: scale(1.06); box-shadow: 0 6px 28px rgba(127, 91, 255, 0.5); }
+      #ai-chat-toggle:focus-visible { outline: 2px solid var(--accent-c, #4fd7ff); outline-offset: 4px; }
+      #ai-chat-toggle svg { width: 26px; height: 26px; fill: currentColor; }
+      #ai-chat-window { position: absolute; bottom: 72px; right: 0; width: 360px; max-width: calc(100vw - 40px); height: 480px; background: var(--surface-soft, rgba(20, 12, 38, 0.98)); border: 1px solid rgba(127, 91, 255, 0.4); border-radius: var(--card-radius, 22px); box-shadow: 0 24px 54px rgba(0,0,0,0.4), 0 0 32px rgba(127, 91, 255, 0.15); display: none; flex-direction: column; overflow: hidden; }
+      #ai-chat-window[hidden] { display: none !important; }
+      #ai-chat-window:not([hidden]) { display: flex !important; }
+      .ai-chat-header { background: linear-gradient(95deg, var(--accent-a), var(--accent-b)); color: #fff; padding: 14px 16px; font-weight: 600; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; }
+      .ai-chat-close { background: none; border: none; color: #fff; cursor: pointer; font-size: 22px; line-height: 1; padding: 0 4px; opacity: 0.9; }
+      .ai-chat-close:hover { opacity: 1; }
+      .ai-chat-messages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+      .ai-message { max-width: 88%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
+      .ai-message.user { background: linear-gradient(135deg, var(--accent-a), var(--accent-b)); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+      .ai-message.assistant { background: rgba(127, 91, 255, 0.18); color: var(--text-main); border: 1px solid rgba(127, 91, 255, 0.3); align-self: flex-start; border-bottom-left-radius: 4px; }
+      .ai-message.error { background: rgba(220, 38, 38, 0.2); color: #fca5a5; border: 1px solid rgba(220, 38, 38, 0.4); font-size: 13px; }
+      .ai-chat-input { padding: 12px; border-top: 1px solid rgba(127, 91, 255, 0.25); display: flex; gap: 8px; }
+      .ai-chat-input input { flex: 1; padding: 10px 14px; border: 1px solid rgba(127, 91, 255, 0.4); border-radius: 20px; background: rgba(13, 9, 25, 0.8); color: var(--text-main); font-size: 14px; outline: none; }
+      .ai-chat-input input::placeholder { color: var(--text-muted); }
+      .ai-chat-input input:focus { border-color: var(--accent-c); }
+      .ai-chat-input button { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-a), var(--accent-b)); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+      .ai-chat-input button:disabled { opacity: 0.6; cursor: not-allowed; }
+      .ai-typing { display: flex; gap: 5px; padding: 10px 14px; background: rgba(127, 91, 255, 0.15); border-radius: 16px; border-bottom-left-radius: 4px; width: fit-content; }
+      .ai-typing span { width: 8px; height: 8px; background: var(--accent-c); border-radius: 50%; animation: ai-typing 1.2s infinite; }
+      .ai-typing span:nth-child(2) { animation-delay: 0.15s; }
+      .ai-typing span:nth-child(3) { animation-delay: 0.3s; }
+      @keyframes ai-typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.6; } 30% { transform: translateY(-6px); opacity: 1; } }
+      @media (max-width: 480px) { #ai-chat-window { width: calc(100vw - 32px); right: -6px; } }
+    </style>
+    <script>
+      (function() {
+        var apiUrl = "/api/chat";
+        var welcomeMessage = "Привет! Я помогу рассказать об услугах и опыте Миши. Можете спросить про проекты, услуги или как с ним связаться.";
+        var win = document.getElementById("ai-chat-window");
+        var toggleBtn = document.getElementById("ai-chat-toggle");
+        var closeBtn = win.querySelector(".ai-chat-close");
+        var messagesEl = document.getElementById("chat-messages");
+        var inputEl = document.getElementById("user-message");
+        var sendBtn = document.getElementById("send-btn");
+
+        function openChat() { win.hidden = false; toggleBtn.setAttribute("aria-expanded", "true"); if (messagesEl.children.length === 0) addMsg(welcomeMessage, "assistant"); }
+        function closeChat() { win.hidden = true; toggleBtn.setAttribute("aria-expanded", "false"); }
+        toggleBtn.addEventListener("click", function() { if (win.hidden) openChat(); else closeChat(); });
+        closeBtn.addEventListener("click", closeChat);
+
+        function addMsg(text, role) {
+          var div = document.createElement("div");
+          div.className = "ai-message " + role;
+          div.textContent = text;
+          messagesEl.appendChild(div);
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+        function addTyping() {
+          var div = document.createElement("div");
+          div.className = "ai-typing";
+          div.id = "typing-" + Date.now();
+          div.innerHTML = "<span></span><span></span><span></span>";
+          messagesEl.appendChild(div);
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+          return div.id;
+        }
+        function removeTyping(id) { var el = document.getElementById(id); if (el) el.remove(); }
+
+        sendBtn.addEventListener("click", sendMessage);
+        inputEl.addEventListener("keydown", function(e) { if (e.key === "Enter") sendMessage(); });
+
+        function sendMessage() {
+          var message = inputEl.value.trim();
+          if (!message) return;
+          addMsg(message, "user");
+          inputEl.value = "";
+          sendBtn.disabled = true;
+          var typingId = addTyping();
+          fetch(apiUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: message }) })
+            .then(function(r) { return r.ok ? r.json() : r.json().then(function(j) { throw new Error(j.error || "Ошибка запроса"); }); })
+            .then(function(data) { removeTyping(typingId); addMsg(data.response, "assistant"); })
+            .catch(function(err) { removeTyping(typingId); addMsg("Извините, произошла ошибка: " + (err.message || "нет связи"), "error"); })
+            .finally(function() { sendBtn.disabled = false; });
+        }
+      })();
+    </script>
   </body>
 </html>
