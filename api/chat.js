@@ -52,8 +52,8 @@ async function callMiniMax(apiKey, userMessage) {
     body: JSON.stringify({
       model: 'M2-her',
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userMessage },
+        { role: 'system', name: 'Assistant', content: SYSTEM_PROMPT },
+        { role: 'user', name: 'User', content: userMessage },
       ],
       max_completion_tokens: 1024,
       temperature: 0.7,
@@ -67,9 +67,35 @@ async function callMiniMax(apiKey, userMessage) {
     throw new Error(errMsg || 'MiniMax API error');
   }
 
-  const content = data?.choices?.[0]?.message?.content;
-  if (content != null) return content;
-  throw new Error('Empty response from MiniMax');
+  const statusCode = data?.base_resp?.status_code;
+  if (statusCode !== undefined && statusCode !== 0) {
+    const errMsg = data?.base_resp?.status_msg || `Ошибка API (код ${statusCode})`;
+    throw new Error(errMsg);
+  }
+
+  const content = extractContent(data);
+  if (typeof content === 'string') {
+    if (content.trim()) return content;
+    return 'Ответ пуст (возможна фильтрация контента). Попробуйте переформулировать.';
+  }
+  console.log('MiniMax parse failed: topKeys=', data ? Object.keys(data).join(',') : 'null');
+  throw new Error(data?.base_resp?.status_msg || 'Empty response from MiniMax');
+}
+
+function extractContent(data) {
+  const choice = data?.choices?.[0];
+  let text = choice?.message?.content ?? choice?.delta?.content;
+  if (typeof text === 'string') return text;
+  if (Array.isArray(choice?.message?.content)) {
+    const block = choice.message.content.find((b) => b?.type === 'text' && b?.text);
+    if (block) return block.text;
+  }
+  if (Array.isArray(data?.content)) {
+    const block = data.content.find((b) => b?.type === 'text' && b?.text);
+    if (block) return block.text;
+  }
+  if (typeof data?.reply_content === 'string') return data.reply_content;
+  return null;
 }
 
 export default async function handler(req, res) {
@@ -78,9 +104,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.MINIMAX_API_KEY;
+  const apiKey = (process.env.MINIMAX_API_KEY || '').trim();
   if (!apiKey) {
-    return res.status(503).json({ error: 'Чат временно недоступен.' });
+    return res.status(503).json({
+      error: 'Чат временно недоступен. В Vercel: Project → Settings → Environment Variables задайте MINIMAX_API_KEY для Production и сделайте повторный деплой (Redeploy).',
+      reason: 'NO_API_KEY'
+    });
   }
 
   const message = req.body?.message;

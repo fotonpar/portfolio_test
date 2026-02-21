@@ -1294,7 +1294,7 @@
           sendBtn.disabled = true;
           var typingId = addTyping();
           fetch(apiUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: message }) })
-            .then(function(r) { return r.ok ? r.json() : r.json().then(function(j) { throw new Error(j.error || "Ошибка запроса"); }); })
+            .then(function(r) { return r.json().then(function(j) { if (!r.ok) throw new Error(j.error || "Ошибка запроса"); return j; }); })
             .then(function(data) { removeTyping(typingId); addMsg(data.response, "assistant"); })
             .catch(function(err) { removeTyping(typingId); addMsg("Извините, произошла ошибка: " + (err.message || "нет связи"), "error"); })
             .finally(function() { sendBtn.disabled = false; });
