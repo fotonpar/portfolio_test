@@ -43,19 +43,20 @@ const SYSTEM_PROMPT = `Ты помощник по портфолио Миши К
 ${KNOWLEDGE}`;
 
 async function callMiniMax(apiKey, userMessage) {
-  const res = await fetch('https://api.minimax.io/v1/text/chatcompletion_v2', {
+  // Anthropic-compatible endpoint: works with Coding Plan subscription (MiniMax-M2.5)
+  const res = await fetch('https://api.minimax.io/anthropic/v1/messages', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'M2-her',
+      model: 'MiniMax-M2.5',
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
       messages: [
-        { role: 'system', name: 'Assistant', content: SYSTEM_PROMPT },
-        { role: 'user', name: 'User', content: userMessage },
+        { role: 'user', content: [{ type: 'text', text: userMessage }] },
       ],
-      max_completion_tokens: 1024,
       temperature: 0.7,
     }),
   });
@@ -63,13 +64,17 @@ async function callMiniMax(apiKey, userMessage) {
   const data = await res.json();
 
   if (!res.ok) {
-    const errMsg = data?.base_resp?.status_msg || data?.error?.message || res.statusText;
+    const errMsg = data?.error?.message || data?.base_resp?.status_msg || res.statusText;
     throw new Error(errMsg || 'MiniMax API error');
   }
 
   const statusCode = data?.base_resp?.status_code;
+  const statusMsg = (data?.base_resp?.status_msg || data?.error?.message || '').toLowerCase();
   if (statusCode !== undefined && statusCode !== 0) {
-    const errMsg = data?.base_resp?.status_msg || `Ошибка API (код ${statusCode})`;
+    if (statusCode === 1008 || statusMsg.includes('insufficient balance') || statusMsg.includes('balance')) {
+      throw new Error('Чат временно недоступен. Пополните баланс в личном кабинете MiniMax (platform.minimax.io).');
+    }
+    const errMsg = data?.base_resp?.status_msg || data?.error?.message || `Ошибка API (код ${statusCode})`;
     throw new Error(errMsg);
   }
 
@@ -79,7 +84,7 @@ async function callMiniMax(apiKey, userMessage) {
     return 'Ответ пуст (возможна фильтрация контента). Попробуйте переформулировать.';
   }
   console.log('MiniMax parse failed: topKeys=', data ? Object.keys(data).join(',') : 'null');
-  throw new Error(data?.base_resp?.status_msg || 'Empty response from MiniMax');
+  throw new Error(data?.base_resp?.status_msg || data?.error?.message || 'Empty response from MiniMax');
 }
 
 function extractContent(data) {
